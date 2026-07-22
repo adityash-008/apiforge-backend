@@ -13,3 +13,5 @@ app.get('/', (req, res) => {
 
 app.use('/projects', projectRouter)
 
+export default app;
+
