@@ -1,85 +1,134 @@
-import { projects } from "../data/projects.js";
+import connection from "../config/db.js";
 
-export const getAllProjects = (req,res) => {
-    const allProjects = projects;
-    res.status(200).json({
-        success: true,
-        data: allProjects
-    })
-}
+export const getAllProjects = async (req, res) => {
+    try {
+        const [rows] = await connection.query("SELECT * FROM projects");
 
-export const getProjectById = (req, res) => {
-    const id = parseInt(req.params.id)
-    const data = projects.find(project => project.id === id);
-    if (!data) {
-        return res.status(404).json({
-            "success": false,
-            "message": "Project Not Found"
+        res.status(200).json(rows)
+    } catch (error) {
+        console.log("ERROR: "+ error.message);
+
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
         })
     }
-    return res.status(200).json({
-        "success": true,
-        "message": "Projects fetched successfully",
-        "data": data
-
-    })
 }
 
-export const createProject = (req, res) => {
-    const projectData = req.body; //Read Data
+export const getProjectById = async (req, res) => {
+    try {
+        const { id } = req.params;
 
-    if (!projectData.name) return res.status(400).json({ message: "Enter Required Field" })
-    if (projectData.name.length < 3) return res.status(400).json({ message: "Minimum length is 3 " })
+        const [project] = await connection.query("SELECT * FROM projects WHERE id=?", [id]);
 
-    const project = { //Create a object
-        id: projects.length + 1,
-        name: projectData.name,
-        description: projectData.description,
-        category: projectData.category,
-        githubUrl: projectData.githubUrl,
-        createdAt: new Date(),
-        updatedAt: new Date()
-    };
-    //Adding to array
-    projects.push(project);
-    //Sending a response
-    return res.status(201).json({
-        success: true
-    })
+        if (project.length === 0) return res.status(404).json({
+            success: false,
+            message: "Project Not Found!"
+        })
+
+        return res.status(200).json({
+            success: true,
+            message: "Data fetched Successfully",
+            data: project[0]
+        })
+    } catch (error) {
+        console.log("ERROR: " + error.message);
+
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        })
+    }
 }
 
-export const updateProject = (req, res) => {
-    const id = parseInt(req.params.id);
-    const updateData = req.body;
+export const createProject = async (req, res) => {
+    try {
+        const projectData = req.body;
+        const { title, description, status } = projectData;
 
-    const project = projects.find(project => project.id === id);
-    if (!project) return res.status(404).json({
-        success: false,
-        message: "Project Not Found!"
-    })
-    Object.assign(project, updateData);
+        if (!title || !status) return res.status(400).json({
+            success: false,
+            message: "Enter required fields"
+        })
+        if (title.length < 3) return res.status(400).json({
+            success: false,
+            message: "Minimum length should be 3"
+        })
 
-    project.updatedAt = new Date();
-    return res.status(200).json({
-        success: true,
-        message: "Project updated successfully",
-        data: project
-    })
+
+        const [result] = await connection.query("INSERT INTO projects (title,description,status) VALUES(?,?,?)",
+            [title, description, status]
+        );
+        return res.status(201).json({
+            success: true,
+            message: "Project Created Successfully",
+            projectId: result.insertId
+        })
+    } catch (error) {
+        console.log("ERROR: " + error.message);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        })
+    }
 }
 
-export const deleteProject = (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = projects.findIndex(project => project.id === id);
+export const updateProject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, status } = req.body;
 
-    if (index === -1) return res.status(404).json({
-        success: false,
-        message: "Project Not Found!"
-    })
+        if (!title || !status) return res.status(400).json({
+            success: false,
+            message: "Title and status are required"
+        })
+        if (title.length < 3) return res.status(400).json({
+            success: false,
+            message: "Minimum length should be 3"
+        })
 
-    const deletedProject = projects[index];
-    projects.splice(index, 1);
-    return res.status(200).json({
-        success: true,
-        message: "Project Deleted Successdully"
-    })
+        const [result] = await connection.query("UPDATE projects SET title = ?,description = ?,status = ? WHERE id = ?", [title, description, status, id])
+        if (result.affectedRows === 0) return res.status(404).json({
+            success: false,
+            message: "Project Not Found!"
+        })
+
+        return res.status(200).json({
+            success: true,
+            message: "Project updated successfully",
+
+        })
+    } catch (error) {
+        console.log("ERROR: " + error.message);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        })
+    }
+}
+
+export const deleteProject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [result] = await connection.query("DELETE FROM projects WHERE id = ?", [id]);
+
+        if (result.affectedRows === 0) return res.status(404).json({
+            success: false,
+            message: "Project Not Found!"
+        })
+
+        return res.status(200).json({
+            success: true,
+            message: "Project Deleted Successfully"
+        })
+    } catch (error) {
+        console.log("ERROR: " + error.message);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        })
+    }
 }
