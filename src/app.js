@@ -1,4 +1,5 @@
 import express from 'express';
+import errorHandler from './middlewares/errorHandler.js';
 
 import projectRouter from "./routes/project.routes.js";
 
@@ -12,6 +13,8 @@ app.get('/', (req, res) => {
 })
 
 app.use('/projects', projectRouter)
+
+app.use(errorHandler)
 
 export default app;
 
