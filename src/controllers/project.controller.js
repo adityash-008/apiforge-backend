@@ -13,7 +13,7 @@ export const getProjectById = asyncHandler(async (req, res) => {
 
     const { id } = req.params;
 
-    const [project] = await connection.pool("SELECT * FROM projects WHERE id=?", [id]);
+    const [project] = await pool.query("SELECT * FROM projects WHERE id=?", [id]);
 
     if (project.length === 0) return res.status(404).json({
         success: false,
