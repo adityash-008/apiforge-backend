@@ -72,3 +72,32 @@ export const loginUser = asyncHandler(async (req,res) => {
     })
 });
 
+export const getCurrentUser = asyncHandler(async (req,res) => {
+    const {id} = req.user;
+    
+    const [users] = await pool.query("SELECT id,name,email,created_at FROM users WHERE id = ?",[id]);
+
+    if(users.length === 0) return res.status(404).json({
+        success: false,
+        message: "User Not Found"
+    })
+
+    return res.status(200).json({
+        success: true,
+        message: "Profile",
+        data: users[0]
+    })
+})
+
+export const logoutUser = asyncHandler(async (req,res) => {
+    res.clearCookie("token", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax"
+    });
+    
+    return res.status(200).json({
+        success: true,
+        message: "Logged Out Successfully"
+    })
+})

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 import {
     getProjectById,
     createProject,
@@ -10,10 +11,10 @@ import {
 const router = Router();
 
 router
-    .get('/',getAllProjects)
-    .get('/:id', getProjectById)
-    .post('', createProject)
-    .put('/:id', updateProject)
-    .delete('/:id', deleteProject)
+    .get('/', authMiddleware, getAllProjects)
+    .get('/:id', authMiddleware, getProjectById)
+    .post('', authMiddleware, createProject)
+    .patch('/:id',authMiddleware, updateProject)
+    .delete('/:id',authMiddleware, deleteProject)
 
 export default router;

@@ -3,17 +3,23 @@ import pool from "../config/db.js";
 
 export const getAllProjects = asyncHandler(async (req, res) => {
 
-    const [rows] = await pool.query("SELECT * FROM projects");
+    const userId = req.user.id;
 
-    res.status(200).json(rows)
+    const [projects] = await pool.query("SELECT * FROM projects WHERE user_id = ?", [userId]);
+
+    res.status(200).json({
+        success: true,
+        projects
+    })
 
 })
 
 export const getProjectById = asyncHandler(async (req, res) => {
 
-    const { id } = req.params;
+    const user_id = req.user.id;
+    const projectId = req.params.id
 
-    const [project] = await pool.query("SELECT * FROM projects WHERE id=?", [id]);
+    const [project] = await pool.query("SELECT * FROM projects WHERE id=? AND user_id = ?", [projectId, user_id]);
 
     if (project.length === 0) return res.status(404).json({
         success: false,
@@ -22,29 +28,35 @@ export const getProjectById = asyncHandler(async (req, res) => {
 
     return res.status(200).json({
         success: true,
-        message: "Data fetched Successfully",
-        data: project[0]
+        project: project[0]
     })
 
 })
 
 export const createProject = asyncHandler(async (req, res) => {
 
-    const projectData = req.body;
-    const { title, description, status } = projectData;
+    const { name, description, status, github_url, live_url, category } = req.body;
+    const user_id = req.user.id;
 
-    if (!title || !status) return res.status(400).json({
+    if (!name || !status) return res.status(400).json({
         success: false,
         message: "Enter required fields"
     })
-    if (title.length < 3) return res.status(400).json({
+
+    if (name.length < 3) return res.status(400).json({
         success: false,
         message: "Minimum length should be 3"
     })
 
+    const allowedStatus = ["Active", "Completed", "On Hold"]
+    if (!allowedStatus.includes(status)) return res.status(400).json({
+        success: false,
+        message: "Invalid status"
+    })
 
-    const [result] = await pool.query("INSERT INTO projects (title,description,status) VALUES(?,?,?)",
-        [title, description, status]
+    const [result] = await pool.query("INSERT INTO projects (name,description,status,github_url,live_url,category,user_id) VALUES(?,?,?,?,?,?,?)",
+
+        [name, description, status, github_url, live_url, category, user_id]
     );
     return res.status(201).json({
         success: true,
@@ -56,19 +68,59 @@ export const createProject = asyncHandler(async (req, res) => {
 
 export const updateProject = asyncHandler(async (req, res) => {
 
-    const { id } = req.params;
-    const { title, description, status } = req.body;
+    
+    const projectId = Number(req.params.id);
+    const user_id = req.user.id;
+    const { name, description, status, github_url, live_url, category } = req.body;
 
-    if (!title || !status) return res.status(400).json({
+    if (isNaN(projectId)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid Project ID"
+        });
+    }
+
+    const updates = [];
+    const values = [];
+
+    const fields = {
+        name, description, status, github_url, live_url, category
+    }
+
+    if (name && name.length < 3) return res.status(400).json({
         success: false,
-        message: "Title and status are required"
-    })
-    if (title.length < 3) return res.status(400).json({
-        success: false,
-        message: "Minimum length should be 3"
+        message: "Name length should be greater than 3"
     })
 
-    const [result] = await pool.query("UPDATE projects SET title = ?,description = ?,status = ? WHERE id = ?", [title, description, status, id])
+    const allowedStatus = ["Active", "Completed", "On Hold"];
+
+    if (status && !allowedStatus.includes(status)) return res.status(400).json({
+        success: false,
+        message: "Invalid Status"
+    });
+
+    for (const key in fields) {
+        if (fields[key] !== undefined && fields[key].trim() !== "") {
+            updates.push(` ${key} = ?`);
+            values.push(fields[key]);
+        }
+    }
+
+    if (updates.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "No fields to update"
+        });
+    }
+
+    const updateQuery = updates.join(", ");
+    const query = `UPDATE projects SET ${updateQuery} WHERE id = ? AND user_id = ?`
+
+    values.push(projectId);
+    values.push(user_id);
+
+    const [result] = await pool.query(query, values);
+
     if (result.affectedRows === 0) return res.status(404).json({
         success: false,
         message: "Project Not Found!"
@@ -76,7 +128,7 @@ export const updateProject = asyncHandler(async (req, res) => {
 
     return res.status(200).json({
         success: true,
-        message: "Project updated successfully",
+        message: "Project Updated Successfully",
 
     })
 
@@ -84,8 +136,17 @@ export const updateProject = asyncHandler(async (req, res) => {
 
 export const deleteProject = asyncHandler(async (req, res) => {
 
-    const { id } = req.params;
-    const [result] = await pool.query("DELETE FROM projects WHERE id = ?", [id]);
+    const projectId = Number(req.params.id);
+    const user_id = req.user.id;
+
+    if (isNaN(projectId)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid Project ID"
+        });
+    }
+
+    const [result] = await pool.query("DELETE FROM projects WHERE id = ? AND user_id = ?", [projectId, user_id]);
 
     if (result.affectedRows === 0) return res.status(404).json({
         success: false,
