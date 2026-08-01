@@ -3,6 +3,7 @@ import errorHandler from "./middlewares/errorHandler.js";
 import cookieParser from "cookie-parser";
 import projectRouter from "./routes/project.routes.js";
 import userRouter from "./routes/user.routes.js"
+import apiKeyRouter from "./routes/apiKey.routes.js"
 
 
 const app = express();
@@ -18,6 +19,9 @@ app.use('/projects', projectRouter)
 
 //User Routes
 app.use('/api/users',userRouter)
+
+//API-Key Routes
+app.use("/api/api-keys", apiKeyRouter);
 
 app.use(errorHandler)
 
