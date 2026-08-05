@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import projectRouter from "./routes/project.routes.js";
 import userRouter from "./routes/user.routes.js"
 import apiKeyRouter from "./routes/apiKey.routes.js"
-
+import apiRouter from "./routes/api.routes.js"
 
 const app = express();
 app.use(express.json());
@@ -21,7 +21,10 @@ app.use('/projects', projectRouter)
 app.use('/api/users',userRouter)
 
 //API-Key Routes
-app.use("/api/api-keys", apiKeyRouter);
+app.use('/api/api-keys', apiKeyRouter);
+
+//API Routes
+app.use('/api/v1',apiRouter)
 
 app.use(errorHandler)
 
