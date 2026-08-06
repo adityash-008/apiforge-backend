@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { generateApiKey } from '../controllers/generateApiKey.js';
+import { generateApiKey, getAllApiKeys } from "../controllers/apiKey.controller.js";
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 
@@ -7,7 +7,7 @@ import { authMiddleware } from '../middlewares/auth.middleware.js';
 const router = Router();
 
 router
-.post('/generate',authMiddleware,generateApiKey)
-
+    .post('/generate', authMiddleware, generateApiKey)
+    .get('/', authMiddleware, getAllApiKeys)
 
 export default router;
